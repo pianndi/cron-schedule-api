@@ -7,21 +7,33 @@ import cronRoutes from './routes/cron.route.js';
 import cronController from './controllers/cron.controller.js';
 import split from './utils/routes.js';
 import miscRoutes from './routes/misc.route.js';
+import cookieParser from "cookie-parser";
+import { exec } from 'child_process';
 
 let availableRoutes = [];
 cronController.invokeCrons();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors({ origin: '*' }));
 app.use(formData.parse());
 app.use((req, res, next) => {
+  const PHPSESSID= req.cookies["PHPSESSID"];
+  if (!PHPSESSID) return res.status(401).json({ message: "Unauthorized" })
   // run auth.php to check if the user is authenticated
   // if not, return res.status(401).json({ message: 'Unauthorized' });
   // get phpsessid from req.headers.cookie
-  next();
+  exec("php /var/www/auth.php "+PHPSESSID, (err, stdout, stderr) => {
+    if (stdout == 200) {
+      next();
+    } else {
+      res.status(401).json({ message: "Unauthorized" })
+    }
+
+  });
 })
 app.get('/', (req, res) => {
   return res.status(200).json({ message: 'Welcome to the Scheduler API!', data: availableRoutes });

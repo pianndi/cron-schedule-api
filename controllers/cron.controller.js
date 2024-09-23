@@ -47,6 +47,7 @@ class CronController {
     const cron = scheduledJobs[id]
     if (!cron) return res.status(404).json({ message: "Cron tidak ditemukan" })
     await prisma.cron.delete({ where: { id } })
+    cron.cancel()
     await cron.deleteFromSchedule()
     return res.status(204).json({ message: 'Berhasil menghapus' });
   }
