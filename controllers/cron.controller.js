@@ -18,19 +18,22 @@ class CronController {
     const { name, schedule, command } = req.body;
     console.log({ name, schedule, command })
     if (!name || !schedule || !command) return res.status(400).json({ message: 'Input tidak valid' });
-    const data = await prisma.cron.create({ data: { name, schedule, command } });
+    const data = await prisma.cron.create({ data: { name, active: true, schedule, command } });
     this.invokeCron(data);
     return res.json({ message: 'Berhasil menambahkan data', data });
   }
   async update(req, res) {
     const { id } = req.params;
-    const { name, schedule, command } = req.body;
+    const { name, schedule, command, active } = req.body;
     if (!id || !name || !schedule || !command) return res.status(400).json({ message: 'Input tidak valid' });
     const job = scheduledJobs[id];
     if (!job) return res.status(404).json({ message: "Cron tidak ditemukan" });
-    await prisma.cron.update({ where: { id }, data: { name, schedule, command } });
-    await job.reschedule(schedule);
+    await prisma.cron.update({ where: { id }, data: { name, active, schedule, command } });
+    if (active) {
+      await job.reschedule(schedule);
+    }
     job.job = () => {
+      if (!active) return
       exec(command, (err, stdout, stderr) => {
         if (err) {
           console.error(err);

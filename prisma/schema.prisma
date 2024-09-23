@@ -18,6 +18,7 @@ model Cron {
   name      String
   schedule  String
   command   String
+  active    Boolean
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
